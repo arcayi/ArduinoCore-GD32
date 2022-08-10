@@ -158,7 +158,9 @@ uint16_t get_adc_value(PinName pinname)
         adc_channel_length_config(adc_periph, ADC_REGULAR_CHANNEL, 1U);
 #elif defined(GD32F3x0) || defined(GD32F1x0) || defined(GD32E23x)
         rcu_adc_clock_config(RCU_ADCCK_APB2_DIV6);
+#if not defined(GD32E23x)
         adc_special_function_config(ADC_CONTINUOUS_MODE, ENABLE);
+#endif
 #if defined(GD32F3x0) || defined(GD32F170_190) || defined(GD32E23x)
         adc_resolution_config(ADC_RESOLUTION_12B);
 #endif
