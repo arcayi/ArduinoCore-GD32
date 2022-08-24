@@ -30,33 +30,43 @@
 // SerialEvent functions are weak, so when the user doesn't define them,
 // the linker just sets their address to 0 (which is checked below).
 // The Serialx_available is just a wrapper around Serialx.available(),
-// but we can refer to it weakly so we don't pull in the entire
+// but implemented more low level so that we don't have a reference to Serialx.
+// also we can refer to it weakly so we don't pull in the entire
 // HardwareSerial instance if the user doesn't also refer to it.
 
+extern struct serial_s *obj_s_buf[UART_NUM];
+
+int HardwareSerial::availableSerialN(unsigned n)
+{
+    // copy of the HardwareSerial::available function but more direct.
+    if (n >= UART_NUM)
+        return 0;
+    auto _serial = obj_s_buf[n];
+    return ((unsigned int)(SERIAL_RX_BUFFER_SIZE + _serial->rx_head - _serial->rx_tail)) %
+           SERIAL_RX_BUFFER_SIZE;
+}
+
 #if defined(HAVE_HWSERIAL1)
-HardwareSerial Serial1(RX0, TX0, 0);
 void serialEvent1() __attribute__((weak));
 bool Serial1_available()
 {
-    return Serial1.available() > 0;
+    return HardwareSerial::availableSerialN(0) > 0;
 }
 #endif
 
 #if defined(HAVE_HWSERIAL2)
-HardwareSerial Serial2(RX1, TX1, 1);
 void serialEvent2() __attribute__((weak));
 bool Serial2_available()
 {
-    return Serial2.available() > 0;
+    return HardwareSerial::availableSerialN(1) > 0;
 }
 #endif
 
 #if defined(HAVE_HWSERIAL3)
-HardwareSerial Serial3(RX2, TX2, 2);
 void serialEvent3() __attribute__((weak));
 bool Serial3_available()
 {
-    return Serial3.available() > 0;
+    return HardwareSerial::availableSerialN(2) > 0;
 }
 #endif
 
@@ -65,7 +75,7 @@ HardwareSerial Serial4(RX3, TX3, 3);
 void serialEvent4() __attribute__((weak));
 bool Serial4_available()
 {
-    return Serial4.available() > 0;
+    return HardwareSerial::availableSerialN(3) > 0;
 }
 #endif
 
@@ -74,7 +84,7 @@ HardwareSerial Serial5(RX4, TX4, 4);
 void serialEvent5() __attribute__((weak));
 bool Serial5_available()
 {
-    return Serial5.available() > 0;
+    return HardwareSerial::availableSerialN(4) > 0;
 }
 #endif
 
@@ -107,23 +117,19 @@ void serialEventRun(void)
     }
 #endif
 }
-ring_buffer_r HardwareSerial::_rx_buffer = {{0}, 0, 0};
-ring_buffer_t HardwareSerial::_tx_buffer = {{0}, 0, 0};
-
 
 HardwareSerial::HardwareSerial(uint8_t rx, uint8_t tx, int uart_index)
 {
     _serial.pin_rx = DIGITAL_TO_PINNAME(rx);
     _serial.pin_tx =  DIGITAL_TO_PINNAME(tx);
-    _serial.rx_buffer_ptr = _rx_buffer.buffer;
-    _serial.tx_buffer_ptr = _tx_buffer.buffer;
-    _rx_buffer.head = 0;
-    _rx_buffer.tail = 0;
-    _tx_buffer.head = 0;
-    _tx_buffer.tail = 0;
+    _serial.rx_buff = _rx_buffer;
+    _serial.rx_head = 0;
+    _serial.rx_tail = 0;
+    _serial.tx_buff = _tx_buffer;
+    _serial.tx_head = 0;
+    _serial.tx_tail = 0;
     _serial.tx_count = 0;
     _serial.index = uart_index;
-
 }
 
 void HardwareSerial::begin(unsigned long baud, uint8_t config)
@@ -165,14 +171,14 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     serial_format(&_serial, databits, parity, stopbits);
 
     uart_attach_rx_callback(&_serial, _rx_complete_irq);
-    serial_receive(&_serial, &_rx_buffer.buffer[_rx_buffer.head], 1);
+    serial_receive(&_serial, &_serial.rx_buff[_serial.rx_head], 1);
 
 }
 
 void HardwareSerial::end()
 {
     //clear any received data
-    _rx_buffer.head = _rx_buffer.tail;
+    _serial.rx_head  = _serial.rx_tail;
     //wait for any outstanding data to be sent
     flush();
     //disable the USART
@@ -181,15 +187,15 @@ void HardwareSerial::end()
 
 int HardwareSerial::available(void)
 {
-    return ((unsigned int)(SERIAL_RX_BUFFER_SIZE + _rx_buffer.head - _rx_buffer.tail)) %
+    return ((unsigned int)(SERIAL_RX_BUFFER_SIZE + _serial.rx_head - _serial.rx_tail)) %
            SERIAL_RX_BUFFER_SIZE;
 }
 int HardwareSerial::peek(void)
 {
-    if (_rx_buffer.head == _rx_buffer.tail) {
+    if (_serial.rx_head  == _serial.rx_tail) {
         return -1;
     } else {
-        return _rx_buffer.buffer[_rx_buffer.tail];
+        return _serial.rx_buff[_serial.rx_tail];
     }
 }
 
@@ -198,19 +204,19 @@ int HardwareSerial::read(void)
     unsigned char c;
 
     // if the head isn't ahead of the tail, we don't have any characters
-    if (_rx_buffer.head == _rx_buffer.tail) {
+    if (_serial.rx_head  == _serial.rx_tail) {
         return -1;
     } else {
-        c = _rx_buffer.buffer[_rx_buffer.tail];
-        _rx_buffer.tail = (rx_buffer_index_t)(_rx_buffer.tail + 1) % SERIAL_RX_BUFFER_SIZE;
+        c = _serial.rx_buff[_serial.rx_tail];
+        _serial.rx_tail = (rx_buffer_index_t)(_serial.rx_tail + 1) % SERIAL_RX_BUFFER_SIZE;
         return c;
     }
 }
 
 int HardwareSerial::availableForWrite(void)
 {
-    tx_buffer_index_t head = _tx_buffer.head;
-    tx_buffer_index_t tail = _tx_buffer.tail;
+    tx_buffer_index_t head = _serial.tx_head;
+    tx_buffer_index_t tail = _serial.tx_tail;
 
     if (head >= tail) {
         return SERIAL_TX_BUFFER_SIZE - 1 - head + tail;
@@ -227,7 +233,7 @@ void HardwareSerial::flush()
         return;
     }
     //wait for transmit data to be sent
-    while ((_tx_buffer.head != _tx_buffer.tail)) {
+    while ((_serial.tx_head != _serial.tx_tail)) {
         // wait for transmit data to be sent
     }
     // Wait for transmission to complete
@@ -237,17 +243,17 @@ void HardwareSerial::flush()
 size_t HardwareSerial::write(uint8_t c)
 {
     _written = true;
-    tx_buffer_index_t nextWrite = (_tx_buffer.head + 1) % SERIAL_TX_BUFFER_SIZE;
-    while (_tx_buffer.tail == nextWrite) {
+    tx_buffer_index_t nextWrite = (_serial.tx_head + 1) % SERIAL_TX_BUFFER_SIZE;
+    while (_serial.tx_tail == nextWrite) {
     }   // Spin locks if we're about to overwrite the buffer. This continues once the data is sent
-    _tx_buffer.buffer[_tx_buffer.head] = c;
-    _tx_buffer.head = nextWrite;
+    _serial.tx_buff[_serial.tx_head] = c;
+    _serial.tx_head = nextWrite;
 
     _serial.tx_count++;
 
     if (!serial_tx_active(&_serial)) {
         uart_attach_tx_callback(&_serial, _tx_complete_irq);
-        serial_transmit(&_serial, &_tx_buffer.buffer[_tx_buffer.tail], 1);
+        serial_transmit(&_serial, &_serial.tx_buff[_serial.tx_tail], 1);
 
     }
     return 1;
@@ -264,12 +270,12 @@ void HardwareSerial::_rx_complete_irq(serial_t *obj)
         return;
     }
     c = serial_getc(obj);
-    rx_buffer_index_t i = (unsigned int)(_rx_buffer.head + 1) % SERIAL_RX_BUFFER_SIZE;
-    if (i != _rx_buffer.tail) {
-        _rx_buffer.buffer[_rx_buffer.head] = c;
-        _rx_buffer.head = i;
+    rx_buffer_index_t i = (unsigned int)(obj->rx_head + 1) % SERIAL_RX_BUFFER_SIZE;
+    if (i != obj->rx_tail) {
+        obj->rx_buff[obj->rx_head] = c;
+        obj->rx_head = i;
     }
-    serial_receive(obj, &_rx_buffer.buffer[_rx_buffer.head], 1);
+    serial_receive(obj, &obj->rx_buff[obj->rx_head], 1);
 }
 
 void HardwareSerial::_tx_complete_irq(serial_t *obj)
@@ -277,10 +283,10 @@ void HardwareSerial::_tx_complete_irq(serial_t *obj)
     if (obj == NULL) {
         return;
     }
-    _tx_buffer.tail = (_tx_buffer.tail + 1) % SERIAL_TX_BUFFER_SIZE;
-    if (_tx_buffer.head == _tx_buffer.tail) {
+    obj->tx_tail = (obj->tx_tail + 1) % SERIAL_TX_BUFFER_SIZE;
+    if (obj->tx_head == obj->tx_tail) {
     } else {
-        serial_transmit(obj, &_tx_buffer.buffer[_tx_buffer.tail], 1);
+        serial_transmit(obj, &obj->tx_buff[obj->tx_tail], 1);
     }
 }
 

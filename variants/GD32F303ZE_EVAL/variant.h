@@ -86,9 +86,14 @@ extern "C" {
 #define PIN_SPI_MISO            PB14
 #define PIN_SPI_SCK             PB13
 
-/* I2C definitions */
-#define PIN_WIRE_SDA            PB9
-#define PIN_WIRE_SCL            PB8
+/* I2C0 */
+#define HAVE_I2C
+#ifndef PIN_WIRE_SDA
+#define PIN_WIRE_SDA                PB9
+#endif
+#ifndef PIN_WIRE_SCL
+#define PIN_WIRE_SCL                PB8
+#endif
 
 /* TIMER or PWM definitions */
 #define TIMER_TONE              TIMER5
@@ -101,22 +106,20 @@ extern "C" {
 #define PWM4                    PA8
 #define PWM5                    PB15
 
-/* USART definitions */
-#define USE_USART1_SERIAL
-#define SERIAL_HOWMANY          1
-#define PIN_SERIAL_RX           PA3
-#define PIN_SERIAL_TX           PA2
-#define SERIAL1_RX          PIN_SERIAL_RX
-#define SERIAL1_TX          PIN_SERIAL_TX
+/* Serial definitions */
+/* "Serial" is by default Serial1 / USART0 */
+#ifndef DEFAULT_HWSERIAL_INSTANCE
+#define DEFAULT_HWSERIAL_INSTANCE 2
+#endif
 
-
+/* USART0 */
+#define HAVE_HWSERIAL2
+#define SERIAL1_RX          PA3
+#define SERIAL1_TX          PA2
 
 /* ADC definitions */
 #define ADC_RESOLUTION          10
-#define DACC_RESOLUTION         12
-
-/* I2C definitions */
-#define USE_I2C       1
+#define DAC_RESOLUTION          12
 
 #ifdef __cplusplus
 } // extern "C"

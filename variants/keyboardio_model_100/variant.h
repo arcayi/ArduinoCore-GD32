@@ -103,29 +103,45 @@ extern "C" {
 #define PWM4                    PA15
 #define PWM5                    PB15
 
-/* USART definitions */
+/* Serial definitions */
+/* "Serial" is by default Serial1 / USART0 */
+#ifndef DEFAULT_HWSERIAL_INSTANCE
+#define DEFAULT_HWSERIAL_INSTANCE 1
+#endif
 
-#define SERIAL_HOWMANY          1
+/* USART0 */
+#define HAVE_HWSERIAL1
+#define SERIAL0_RX          PA10
+#define SERIAL0_TX          PA9
 
-#define USE_USART0_SERIAL       
-#define PIN_SERIAL_RX           PA10
-#define PIN_SERIAL_TX           PA9
-#define SERIAL0_RX          PIN_SERIAL_RX
-#define SERIAL0_TX          PIN_SERIAL_TX
+/* USART1*/
+#define HAVE_HWSERIAL2
+#define SERIAL1_RX          PA3
+#define SERIAL1_TX          PA2
+
+/* USART2 */
+#define HAVE_HWSERIAL3
+#define SERIAL2_RX          PB11
+#define SERIAL2_TX          PB10
 
 
 /* ADC definitions */
 #define ADC_RESOLUTION          10
-#define DACC_RESOLUTION         12
+#define DAC_RESOLUTION         12
 
-/* I2C definitions */
-#define USE_I2C       1
-#define PIN_WIRE_SDA            PB7
-#define PIN_WIRE_SCL            PB6
+/* I2C0 */
+#define HAVE_I2C
+#ifndef PIN_WIRE_SDA
+#define PIN_WIRE_SDA                PB7
+#endif
+#ifndef PIN_WIRE_SCL
+#define PIN_WIRE_SCL                PB6
+#endif
+
 
 /* USB definitions */
 #define USB_PULLUP                GPIOA
-#define USB_PULLUP_PIN            GPIO_PIN_12
+#define USB_PULLUP_PIN            GPIO_PIN_8
 #define RCC_AHBPeriph_GPIO_PULLUP RCU_GPIOA
 
 #ifdef __cplusplus

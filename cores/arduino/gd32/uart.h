@@ -132,6 +132,9 @@ struct serial_s {
     uint16_t        rx_size;
     uint8_t         *tx_buffer_ptr;
     uint8_t         *rx_buffer_ptr;
+    //used in HardwareSerial
+    uint8_t         *rx_buff;
+    uint8_t         *tx_buff;
     uint16_t   tx_count;
     uint16_t   rx_count;
 
@@ -147,6 +150,25 @@ struct serial_s {
     void (*tx_callback)(serial_t *obj);
     void (*rx_callback)(serial_t *obj);
 };
+
+typedef enum {
+#if defined(USART0)
+    UART0_INDEX,
+#endif
+#if defined(USART1)
+    UART1_INDEX,
+#endif
+#if defined(USART2)
+    UART2_INDEX,
+#endif
+#if defined(UART3) || defined(USART3)
+    UART3_INDEX,
+#endif
+#if defined(UART4) || defined(USART4)
+    UART4_INDEX,
+#endif
+    UART_NUM
+} int_uart_indexes_t;
 
 /* Initialize the serial peripheral. It sets the default parameters for serial peripheral, and configures its specifieds pins. */
 void serial_init(serial_t *obj, PinName tx, PinName rx);

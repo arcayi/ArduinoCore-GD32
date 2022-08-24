@@ -89,9 +89,15 @@ extern "C" {
 #define PIN_SPI_MISO            PB14
 #define PIN_SPI_SCK             PB13
 
-/* I2C definitions */
-#define PIN_WIRE_SDA            PB9
-#define PIN_WIRE_SCL            PB8
+/* I2C0 */
+#define HAVE_I2C
+#ifndef PIN_WIRE_SDA
+#define PIN_WIRE_SDA                PB9
+#endif
+#ifndef PIN_WIRE_SCL
+#define PIN_WIRE_SCL                PB8
+#endif
+
 
 /* TIMER or PWM definitions */
 #define TIMER_TONE              TIMER5
@@ -104,32 +110,30 @@ extern "C" {
 #define PWM4                    PB6
 #define PWM5                    PB7
 
-/* USART definitions */
-
-#define SERIAL_HOWMANY          1
-/* by default now, use PA9 for TX. To get the old behavior for PA3, define the USE_USART1_SERIAL macro. */
-#if !defined(USE_USART0_SERIAL) && !defined(USE_USART1_SERIAL)
-#define USE_USART0_SERIAL	
+/* Serial definitions */
+/* "Serial" is by default Serial1 / USART0 */
+#ifndef DEFAULT_HWSERIAL_INSTANCE
+#define DEFAULT_HWSERIAL_INSTANCE 1
 #endif
 
-#ifdef USE_USART0_SERIAL	
-#define PIN_SERIAL_RX           PA10
-#define PIN_SERIAL_TX           PA9
-#define SERIAL0_RX          PIN_SERIAL_RX
-#define SERIAL0_TX          PIN_SERIAL_TX
-#elif defined(USE_USART1_SERIAL)
-#define PIN_SERIAL_RX           PA3
-#define PIN_SERIAL_TX           PA2
-#define SERIAL1_RX          PIN_SERIAL_RX
-#define SERIAL1_TX          PIN_SERIAL_TX
-#endif
+/* USART0 */
+#define HAVE_HWSERIAL1
+#define SERIAL0_RX          PA10
+#define SERIAL0_TX          PA9
+
+/* USART1*/
+#define HAVE_HWSERIAL2
+#define SERIAL1_RX          PA3
+#define SERIAL1_TX          PA2
+
+/* USART2 */
+#define HAVE_HWSERIAL3
+#define SERIAL2_RX          PB11
+#define SERIAL2_TX          PB10
 
 /* ADC definitions */
 #define ADC_RESOLUTION          10
-#define DACC_RESOLUTION         12
-
-/* I2C definitions */
-#define USE_I2C       1
+#define DAC_RESOLUTION         12
 
 #ifdef __cplusplus
 } // extern "C"

@@ -82,9 +82,33 @@ extern "C" {
 #define PIN_SPI_SCK                 PB3
 
 /* I2C definitions */
+/* I2C0 */
+#define HAVE_I2C
+#ifndef PIN_WIRE_SDA
 #define PIN_WIRE_SDA                PB7
+#endif
+#ifndef PIN_WIRE_SCL
 #define PIN_WIRE_SCL                PB6
-#define USE_I2C                     1
+#endif
+
+/* I2C1 */
+#define HAVE_I2C1
+#ifndef PIN_WIRE1_SDA
+#define PIN_WIRE1_SDA               PF7
+#endif
+#ifndef PIN_WIRE1_SCL
+#define PIN_WIRE1_SCL               PF6
+#endif
+
+/* I2C2 */
+/* Pins overlap with I2C0. Change I2C0 pins as neeeded. */
+#define HAVE_I2C2
+#ifndef PIN_WIRE2_SDA
+#define PIN_WIRE2_SDA               PB7
+#endif
+#ifndef PIN_WIRE2_SCL
+#define PIN_WIRE2_SCL               PB6
+#endif
 
 /* TIMER or PWM definitions */
 #define TIMER_TONE                  TIMER5
@@ -96,13 +120,29 @@ extern "C" {
 #define PWM3                        PA3
 #define PWM4                        PA4
 
-/* USART definitions */
-#define SERIAL_HOWMANY              1
-#define USE_USART0_SERIAL           
-#define PIN_SERIAL_RX               PA10
-#define PIN_SERIAL_TX               PA9
+/* Serial definitions */
+/* "Serial" is by default Serial1 / USART0 */
+#ifndef DEFAULT_HWSERIAL_INSTANCE
+#define DEFAULT_HWSERIAL_INSTANCE   1
+#endif
+
+/* USART0 */
+#define HAVE_HWSERIAL1
+#ifndef SERIAL0_RX
 #define SERIAL0_RX                  PA10
+#endif
+#ifndef SERIAL0_TX
 #define SERIAL0_TX                  PA9
+#endif
+
+/* USART1 */
+#define HAVE_HWSERIAL2
+#ifndef SERIAL1_RX
+#define SERIAL1_RX                  PA3
+#endif
+#ifndef SERIAL1_TX
+#define SERIAL1_TX                  PA2
+#endif
 
 /* ADC definitions */
 #define ADC_RESOLUTION              10
